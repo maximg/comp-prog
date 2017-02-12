@@ -7,52 +7,50 @@
 #include <memory>
 using namespace std;
 
-// https://www.hackerrank.com/challenges/merging-communities
+struct Node {
+    Node* parent = nullptr;
+    int rank = 0;
+    int count = 1;
+};
 
-using people_vec_t = vector<list<int>*>;
+using people_vec_t = vector<Node>;
 
-int nResets = 0;
-int nSplices = 0;
-int nQueries = 0;
-size_t nMerged = 0;
+Node* root(Node* node) {
+    // path compression
+    if (!node->parent)
+        return node;
 
-void dumpStats() {
-    cerr << "nResets:  " << nResets << endl;
-    cerr << "nSplices: " << nSplices << endl;
-    cerr << "nQueries: " << nQueries << endl;
-    cerr << "nMerged:  " << nMerged << endl;
-    cerr << "    avg:  " << nMerged / nSplices << endl;
+    node->parent = root(node->parent);
+    return node->parent;
 }
 
 void merge(people_vec_t &people, int ii, int jj) {
-    if (people[ii] == people[jj]) {
+    // rank-based merging
+    Node* pi = root(&people[ii]);
+    Node* pj = root(&people[jj]);
+    if (pi == pj) {
         return;
     }
-    if (people[jj]->size() > people[ii]->size()) {
-        swap(ii, jj);
+    if (pi->rank < pj->rank) {
+        pi->parent = pj;
+        pj->count += pi->count;
     }
-
-    nMerged += people[jj]->size() + people[ii]->size();
-    const auto tmp = people[jj];
-    for (const auto k: *tmp) {
-        people[k] = people[ii];
-        ++nResets;
+    else if (pi->rank > pj->rank) {
+        pj->parent = pi;
+        pi->count += pj->count;
     }
-    people[ii]->splice(people[ii]->end(), *tmp);
-    ++nSplices;
-    delete tmp;
+    else {
+        pj->parent = pi;
+        pi->count += pj->count;
+        pi->rank += 1;        
+    }
 }
 
 int main() {
     int n{0}, q{0};
     cin >> n >> q;
-    //cout << "N: " << n << " Q: " << q << endl;
 
-    people_vec_t people;
-
-    for (int i = 0; i < n; ++i) {
-        people.push_back(new list<int>(1, i));
-    }
+    people_vec_t people(n);
 
     for (int i = 0; i < q; ++i) {
         char cmd;
@@ -60,18 +58,13 @@ int main() {
         if (cmd == 'M') {
             int ii{0}, jj{0};
             cin >> ii >> jj;
-            //cout << "Cmd M: " << ii << " " << jj << endl;
             merge(people, ii - 1, jj - 1);
-            //cout << "Size ii: " << people[ii-1]->size() << " size jj: " << people[jj-1]->size() << endl;
         } else if (cmd == 'Q') {
             int ii{0};
             cin >> ii;
-            //cout << "Cmd Q: " << ii << endl;
-            cout << people[ii - 1]->size() << endl;
-            ++nQueries;
+            cout << root(&people[ii - 1])->count << endl;
         }
     }
-    dumpStats();
 
     return 0;
 }
