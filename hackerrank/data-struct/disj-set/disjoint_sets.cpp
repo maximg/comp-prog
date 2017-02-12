@@ -11,6 +11,19 @@ using namespace std;
 
 using people_vec_t = vector<list<int>*>;
 
+int nResets = 0;
+int nSplices = 0;
+int nQueries = 0;
+size_t nMerged = 0;
+
+void dumpStats() {
+    cerr << "nResets:  " << nResets << endl;
+    cerr << "nSplices: " << nSplices << endl;
+    cerr << "nQueries: " << nQueries << endl;
+    cerr << "nMerged:  " << nMerged << endl;
+    cerr << "    avg:  " << nMerged / nSplices << endl;
+}
+
 void merge(people_vec_t &people, int ii, int jj) {
     if (people[ii] == people[jj]) {
         return;
@@ -19,11 +32,14 @@ void merge(people_vec_t &people, int ii, int jj) {
         swap(ii, jj);
     }
 
+    nMerged += people[jj]->size() + people[ii]->size();
     const auto tmp = people[jj];
     for (const auto k: *tmp) {
         people[k] = people[ii];
+        ++nResets;
     }
     people[ii]->splice(people[ii]->end(), *tmp);
+    ++nSplices;
     delete tmp;
 }
 
@@ -52,8 +68,10 @@ int main() {
             cin >> ii;
             //cout << "Cmd Q: " << ii << endl;
             cout << people[ii - 1]->size() << endl;
+            ++nQueries;
         }
     }
+    dumpStats();
 
     return 0;
 }
