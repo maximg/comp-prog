@@ -32,7 +32,6 @@ void process_case() {
         string name;
         getline(cin, name);
         cands.push_back(candidate_t{i+1, name, vector<const ballot_t*>()});
-        //cout << "cand: " << name << "\n";
     }
 
     while (true) {
@@ -64,7 +63,6 @@ void process_case() {
     while (true) {
         vector<const candidate_t*> ranking;
         for (const auto &c: cands) {
-            //cout << "Cand: " << c.name << ", votes: " << c.votes.size() << "\n";
             if (!c.votes.empty()) {
                 ranking.push_back(&c);
             }
@@ -74,7 +72,6 @@ void process_case() {
             return a->votes.size() > b->votes.size();
         });
 
-        //cout << "Best cand: " << ranking[0]->name << ", votes: " << ranking[0]->votes.size() << "\n";
         if (ranking[0]->votes.size() > ballots.size() / 2) {
             cout << ranking[0]->name << "\n";
             return;
@@ -90,23 +87,17 @@ void process_case() {
         for (auto it = ranking.rbegin(); it != ranking.rend(); ++it) {
             if ((*it)->votes.size() > lowest_votes) break;
             eliminated.insert((*it)->id);
-            //cout << "Removed " << (*it)->id << "\n";
         }
 
         // redistribute votes for eliminated candidates
         // do not worry about ones eliminated in previous rounds, they have no votes
         for (const auto idx: eliminated) {
-            //cout << "Removing cand " << idx << "\n"; 
             for (const auto &ballot: cands[idx-1].votes) {
                 // FIXME: probably removing the eliminated candidates from the ballot
                 // would be faster (could reverse the ballot and chop off the tail)
-                //for (auto v : *ballot) cout << v << " ";
-                //cout << "\n";
                 const auto it = find_if(ballot->begin(), ballot->end(), [&eliminated](int v){
-                    //cout << "Check " << v << "\n";
                     return eliminated.find(v) == eliminated.end();
                 });
-                //cout << "Giving votes to " << (*it) << "\n";
                 cands[(*it)-1].votes.push_back(ballot);
             }
             cands[idx-1].votes.clear();
