@@ -33,16 +33,17 @@ vector<int>& candidate_divisors(int n) {
 }
 
 int trace (int n, int ret, char c, int current_best, int current_step) {
-//    cout << n << ": " << ret << " " << c << " " << current_best << " " << current_step << "\n";
+    //cout << n << ": " << ret << " " << c << " " << current_best << " " << current_step << "\n";
     return ret;
 }
 
 int current_best;
 
-int solve(int n, int current_step, bool allow_sc) {
-    if (allow_sc && current_step >= current_best) {
+int solve(int n, int current_step) {
+    //cout << "Solving: " << n << " " << current_best << " " << current_step << "\n";
+    if (current_step >= current_best) {
         //cout << n << ": short-sircuit\n";
-        return current_step;
+        return current_step + 33;
     }
     
     if (n == 1)
@@ -50,31 +51,28 @@ int solve(int n, int current_step, bool allow_sc) {
     
     static unordered_map<int, int> steps; // from N
     int cached = steps[n];
-    if (cached != 0 && cached != INT_MAX)
+    if (cached != 0)
         return trace(n, cached, ' ', current_best, current_step);
 
     const auto &divs = candidate_divisors(n);
     if (divs.empty()) {
-        int cnt = solve(n-1, current_step+1, false);
+        int cnt = solve(n-1, current_step+1);
         return trace(n-1, 1 + cnt, '#', current_best, current_step);
     }
 
     int min_steps = INT_MAX;
     auto solve1 = [&](int k) {
-        int cnt = solve(k, current_step+1, true);
-        if (cnt == INT_MAX)
-            return;
+        int cnt = solve(k, current_step+1);
         min_steps = min(min_steps, cnt);
-        if (current_step + min_steps < current_best)
-            current_best = current_step + min_steps;
+        current_best = min(current_best, min_steps + current_step);
     };
     
     for (auto k: divs)
         solve1(k);
     solve1(n-1);
 
-    int ret = min_steps == INT_MAX ? min_steps : min_steps + 1;
-    steps[n] = ret;
+    int ret = min_steps + 1;
+    //steps[n] = ret;
     return trace(n, ret, '*', current_best, current_step);
 }
 
@@ -85,7 +83,7 @@ int main() {
         current_best = INT_MAX;
         int n {0};
         cin >> n;
-        cout << solve(n, 1, true) << "\n";
+        cout << solve(n, 1) << "\n";
     }
     return 0;
 }
