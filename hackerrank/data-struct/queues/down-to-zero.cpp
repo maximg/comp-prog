@@ -7,11 +7,6 @@
 #include <climits>
 using namespace std;
 
-void dump(vector<int> v) {
-    for (auto k: v) cout << k << " ";
-    cout << endl;
-}
-
 // all divisors which are >= sqrt(n)
 vector<int>& candidate_divisors(int n) {
     static unordered_map<int, vector<int>> divisors; // from N
@@ -27,37 +22,51 @@ vector<int>& candidate_divisors(int n) {
             ret.push_back(n / i);
     }
     divisors[n] = ret;
-//    cout << "divs(" << n << "): ";
-//    dump(ret);
     return divisors[n];
 }
 
+int current_best;
+    static unordered_map<int, int> steps; // from N
+    static unordered_map<int, int> check_steps; // from N
+
+bool check_step(int n, int cnt) {
+    return (check_steps[n] == 0 || check_steps[n] == cnt);
+}
+
 int trace (int n, int ret, char c, int current_best, int current_step) {
-    //cout << n << ": " << ret << " " << c << " " << current_best << " " << current_step << "\n";
+//    cout << n << ": " << ret << " " << c << " " << current_best << " " << current_step << "\n";
     return ret;
 }
 
-int current_best;
+void cache(int n, int cnt) {
+    if (cnt < 1000000) {
+        steps[n] = cnt;
+        if (!check_step(n, cnt)) {
+            cout << "PROBLEM: " << n << " " << cnt << " " << check_steps[n] << "\n";
+        }
+    }    
+}
 
 int solve(int n, int current_step) {
-    //cout << "Solving: " << n << " " << current_best << " " << current_step << "\n";
-    if (current_step >= current_best) {
-        //cout << n << ": short-sircuit\n";
-        return current_step + 33;
-    }
+    if (n < 4)
+        return trace(n, n, ' ', current_best, current_step);
     
-    if (n == 1)
-        return trace(1, 1, ' ', current_best, current_step);
-    
-    static unordered_map<int, int> steps; // from N
+//    static unordered_map<int, int> steps; // from N
     int cached = steps[n];
     if (cached != 0)
-        return trace(n, cached, ' ', current_best, current_step);
+        return trace(n, cached, 'C', current_best, current_step);
 
+    if (current_step >= current_best) {
+        return trace(n, 1000000, ' ', current_best, current_step);
+        //return 1000000;
+    }
+    
     const auto &divs = candidate_divisors(n);
     if (divs.empty()) {
         int cnt = solve(n-1, current_step+1);
+        cache(n, cnt);
         return trace(n-1, 1 + cnt, '#', current_best, current_step);
+//        return 1 + solve(n-1, current_step+1);
     }
 
     int min_steps = INT_MAX;
@@ -72,14 +81,21 @@ int solve(int n, int current_step) {
     solve1(n-1);
 
     int ret = min_steps + 1;
-    //steps[n] = ret;
+    cache(n, ret);
     return trace(n, ret, '*', current_best, current_step);
+//    return ret;
 }
 
 int main() {
+        current_best = INT_MAX;
+        solve(7267, 1);
+        check_steps = steps;
+        steps.clear();
+    
     int q{0};
     cin >> q;
     for (int i = 0; i < q; ++i) {
+        steps.clear();
         current_best = INT_MAX;
         int n {0};
         cin >> n;
