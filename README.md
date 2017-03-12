@@ -1,2 +1,2 @@
 # comp-prog
-My solutions to various competitive programming puzzles
+Solutions to various competitive programming challenges.
