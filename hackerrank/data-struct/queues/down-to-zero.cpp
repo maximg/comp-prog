@@ -52,23 +52,15 @@ int solve(int n, int current_step) {
         return trace(n, n, ' ', current_best, current_step);
     
 //    static unordered_map<int, int> steps; // from N
-    int cached = steps[n];
-    if (cached != 0)
-        return trace(n, cached, 'C', current_best, current_step);
+//    int cached = steps[n];
+//    if (cached != 0)
+//        return trace(n, cached, 'C', current_best, current_step);
 
     if (current_step >= current_best) {
-        return trace(n, 1000000, ' ', current_best, current_step);
+        return trace(n, 1000000, '!', current_best, current_step);
         //return 1000000;
     }
     
-    const auto &divs = candidate_divisors(n);
-    if (divs.empty()) {
-        int cnt = solve(n-1, current_step+1);
-        cache(n, cnt);
-        return trace(n-1, 1 + cnt, '#', current_best, current_step);
-//        return 1 + solve(n-1, current_step+1);
-    }
-
     int min_steps = INT_MAX;
     auto solve1 = [&](int k) {
         int cnt = solve(k, current_step+1);
@@ -76,12 +68,12 @@ int solve(int n, int current_step) {
         current_best = min(current_best, min_steps + current_step);
     };
     
-    for (auto k: divs)
+    for (auto k: candidate_divisors(n))
         solve1(k);
     solve1(n-1);
 
     int ret = min_steps + 1;
-    cache(n, ret);
+//    cache(n, ret);
     return trace(n, ret, '*', current_best, current_step);
 //    return ret;
 }
