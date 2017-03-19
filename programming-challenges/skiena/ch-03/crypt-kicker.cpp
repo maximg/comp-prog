@@ -4,55 +4,72 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
-#include <unordered_map>
-#include <unordered_set>
+#include <array>
 #include <iterator>
+#include <cassert>
 using namespace std;
 
-using mapping_t = unordered_map<char, char>;
-using mapped_t = unordered_set<char>;
 using iterator_t = vector<string>::const_iterator;
 
-mapping_t find_mapping(iterator_t word, const iterator_t &w_end,
-                       const vector<string> &dict,
-                       const mapping_t &mapping, const mapped_t &mapped)
-{
-    iterator_t dword = dict.begin();
+class Mapping {
+    static constexpr size_t N_CHAR = 26;
+    array<char, 26> forward_ = {0}; // to clear
+    array<char, 26> back_    = {0}; // to cypher
+    size_t count = 0;
 
-    // Skip all longer words
-    while (word->size() < dword->size()) {
-        ++dword;
-        if (dword == dict.end()) return mapping_t();
-    }
-
-    while (dword != dict.end()) {
-        // Do we have a matching word in the dictionary?
-        if (word->size() > dword->size()) return mapping_t();
-
-        mapping_t ret(mapping);
-        mapped_t upd_mapped(mapped);
-        const char* pd = dword->c_str();
-        for (const auto c: *word) {
-            const auto it = ret.find(c);
-            const auto it2 = mapped.find(*pd);
-            if (it == ret.end() && it2 == upd_mapped.end()) {
-                ret[c] = *pd;
-                upd_mapped.insert(*pd);
-            }
-            else if (it == ret.end() || it->second != *pd) {
-                ++dword;
-                ret.clear();
-                break;
-            }
-            ++pd;
+    size_t idx(char c) { return c - 'a'; }
+public:
+    bool empty() const { return count == 0; }
+    bool add(char from, char to) {
+        if (forward_[idx(from)] == 0 && back_[idx(to)] == 0) {
+            forward_[idx(from)] = to;
+            back_[idx(to)]      = from;
+            ++count;
+            return true;
         }
-        if (!ret.empty()) {
-            if (++word == w_end) return ret;
-            // mapping ok, try next word
-            else return find_mapping(word, w_end, dict, ret, upd_mapped);
-        };
+        return forward_[idx(from)] == to;
     }
+    char operator[](char c) {
+        assert(forward_[idx(c)]);
+        return forward_[idx(c)];
+    }
+};
 
+bool map_word(const string &word, const string &dword, Mapping &m)
+{
+    assert (word.size() == dword.size());
+    const char *pF = word.c_str();
+    const char *pT = dword.c_str();
+    while (*pF) {
+        if (!m.add(*pF++, *pT++))
+            return false;
+    }
+    return true;
+}    
+
+// DFS with recursion
+Mapping find_mapping(iterator_t word, const iterator_t &w_end,
+                       const vector<string> &dict,
+                       const Mapping &mapping)
+{
+    if (word == w_end) return mapping;
+    for (const auto &dword: dict) {
+        if (dword.size() > word->size()) continue;
+        if (dword.size() < word->size()) break;
+        Mapping m(mapping);
+        if (map_word(*word, dword, m)) {
+            
+            Mapping mret = find_mapping(word+1, w_end, dict, m);
+            if (!mret.empty()) return mret;
+        }
+    }
+    return Mapping();
+}
+
+void sortDescending(vector<string> &v) {
+    sort(begin(v), end(v), [](const string &a, const string &b){
+        return a.size() > b.size();
+    });    
 }
 
 int main() {
@@ -67,10 +84,11 @@ int main() {
         getline(cin, str);
         dict.push_back(str);
     }
-    sort(dict.begin(), dict.end(), [](const string &a, const string &b){
-        return a.size() > b.size();
-    });
-    //cout << dict[0] << endl;
+    // Sort dictionary and input sentence in size descending order,
+    // betting on the fact that longer words are less requent and
+    // have a better chance of having repeating letters
+    sortDescending(dict);
+
     while (true) {
         getline(cin, str);
         if (!cin) break;
@@ -78,11 +96,9 @@ int main() {
         istringstream iss(str);
         vector<string> words{istream_iterator<string>{iss},
                              istream_iterator<string>{}};
-        sort(words.begin(), words.end(), [](const string &a, string auto &b){
-            return a.size() > b.size();
-        });
+        sortDescending(words);
         
-        auto mapping = find_mapping(words.begin(), words.end(), dict, mapping_t(), mapped_t());
+        auto mapping = find_mapping(words.begin(), words.end(), dict, Mapping());
         bool is_found = !mapping.empty();
         for (const auto c: str) {
             if (c == ' ') cout << c;
