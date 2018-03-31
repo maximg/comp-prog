@@ -2,9 +2,8 @@
 // https://uva.onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=970
 
 #include <cmath>
-#include <cstdio>
 #include <vector>
-#include <queue>
+#include <set>
 #include <unordered_map>
 #include <iostream>
 #include <algorithm>
@@ -25,42 +24,36 @@ struct Vertex {
 
 using Graph = unordered_map<string, Vertex>;
 
-bool one_letter_diff(const string &a, const string &b) {
-    if (a.length() != b.length()) return false;
-    int cnt{0};
-    const char *pa{a.c_str()}, *pb{b.c_str()};
-    for (int i = 0; i < a.length(); ++i) {
-        if (*pa++ != *pb++) {
-            if (cnt++ > 0) return false;
-        }
+struct Dumper {
+    int indent{0};
+    void enter(const Vertex &v) {
+        cout << string(indent, ' ') << v.word << endl;
+        indent += 2;        
     }
-    return true;
-}
+    void trace_child(const Vertex &v) {
+        cout << string(indent, ' ') << v.word << " " << v.rank << endl;
+    }
+    void leave(const Vertex &v, int rank) {
+        cout << string(indent, ' ') << "=> " << v.word << " " << rank << endl;
+        indent -= 2;
+    }
+} dumper;
 
-void link(Graph &graph, const string &word, Vertex &vertex) {
-    const auto it = graph.find(word);
-    if (it != graph.end()) {
-        if (vertex.word > word) {
-            it->second.edges = new Edge{ &vertex, it->second.edges};
-            //cout << word << " -> " << vertex.word << endl;
-        }
-        else {
-            vertex.edges = new Edge{ &(it->second), vertex.edges};
-            //cout << vertex.word << " -> " << word << endl;
-        }
-    }
-}
 
 int dfs(Graph &graph, Vertex &vertex) {
     int rank{0};
     Edge *e = vertex.edges;
+    //dumper.enter(vertex);
     while (e) {
         if (e->target->rank < 0) {
             e->target->rank = dfs(graph, *(e->target));
+        } else {
+            //dumper.trace_child(*e->target);
         }
         rank = max(rank, e->target->rank + 1);
         e = e->next;
     }
+    //dumper.leave(vertex, rank);
     return rank;
 }
 
@@ -69,28 +62,39 @@ int main() {
     vector<string> words;
     while (!cin.eof()) {
         string word; cin >> word;
+        if (word.empty()) continue;
         graph.insert({word, {word, nullptr, -1}});
         words.push_back(word);
     }
 
-    // find all one-letter removals / insertions
-    // we are only looking for lexicographically ordered pairs
+    // link together all words which reduce to the same word by
+    // dropping a letter
+    unordered_map<string, set<string> > reduced;
     for (auto &entry: graph) {
         auto &word = entry.second.word;
         for (int i = 0; i < word.length(); ++i) {
-            string modified = word;
-            modified.erase(i, 1);
-            link(graph, modified, entry.second);
+            string replaced{word};
+            replaced[i] = '-';
+            reduced[replaced].insert(word);
+            string removed{word};
+            removed.erase(i, 1);
+            if (graph.find(removed) != graph.end())
+                reduced[replaced].insert(removed);
         }
     }
 
-    // find all 1-letter replacements
-    for (int i = 0; i < words.size() - 1; ++i) {
-        for (int j = i + 1; j < words.size(); ++j) {
-            if (one_letter_diff(words[i], words[j])) {
-                const auto it = graph.find(words[i]);
-                link(graph, words[j], it->second);
-            }
+    // now words in all non-trivial groups should be linked in
+    // lexicographical order
+    for (auto &entry: reduced) {
+        if (entry.second.size() < 2) continue;
+        auto w1 = entry.second.begin();
+        auto w2 = entry.second.begin(); ++w2;
+        while (w2 != entry.second.end()) {
+            const auto it1 = graph.find(*w1);
+            const auto it2 = graph.find(*w2);
+            it1->second.edges = new Edge{ &(it2->second), it1->second.edges};
+            ++w1;
+            ++w2;
         }
     }
 
@@ -101,7 +105,6 @@ int main() {
         if (vertex.rank >= 0) continue;
         vertex.rank = dfs(graph, vertex);
         max_rank = max(max_rank, vertex.rank);
-        //cout << vertex.word << " " << vertex.rank << endl;
     }
 
     cout << max_rank + 1 << endl;
