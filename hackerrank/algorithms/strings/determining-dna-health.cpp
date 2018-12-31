@@ -13,12 +13,11 @@
 using namespace std;
 
 
-vector<string> genes;
-vector<size_t> weights;
-
 namespace aho_corasick {
 
 // based on https://www.toptal.com/algorithms/aho-corasick-algorithm
+
+constexpr size_t UNSET_ID = numeric_limits<size_t>::max();
 
 struct node {
     unordered_map<char, node*> children;
@@ -27,20 +26,22 @@ struct node {
     char parent_char;
     node* suffix = nullptr;
     node* end_word = nullptr;
-    vector<size_t> gene_ids;
+    size_t word_id = UNSET_ID;
 };
 
 list<node> trie;
 node* root = nullptr;
+size_t next_word_id = 0;
+vector<size_t> word_counts;
 
 void init() {
     trie.clear();
     trie.push_back({});
     root = &trie.back();
-    assert(root);
+    next_word_id = 0;
 }
 
-void add_string(const string& s, size_t gene_id) {
+size_t add_string(const string& s) {
     node* cur_node = root;
     for (char c: s) {
         if (cur_node->children.find(c) == cur_node->children.end()) {
@@ -51,18 +52,19 @@ void add_string(const string& s, size_t gene_id) {
                 c,
                 nullptr,
                 nullptr,
-                {}
+                UNSET_ID
             });
             cur_node->children[c] = &trie.back();
         }
         cur_node = cur_node->children[c];
     }
     cur_node->leaf = true;
-    cur_node->gene_ids.push_back(gene_id);
+    if (cur_node->word_id == UNSET_ID)
+        cur_node->word_id = next_word_id++;
+    return cur_node->word_id;
 }
 
 void update_links(node* nd) {
-    assert(nd);
     if (nd == root) {
         nd->suffix = root;
         nd->end_word = root;
@@ -113,18 +115,13 @@ void prepare() {
     }
 }
 
-size_t get_health(node* nd, size_t begin, size_t end) {
-    size_t health = 0;
-    for (auto id: nd->gene_ids)
-        if (id >= begin && id <= end)
-            health += weights[id];
-    return health;
-}
 
-size_t process(size_t begin, size_t end, const string& text) {
+void process(const string& text) {
+
+    word_counts.clear();
+    word_counts.resize(next_word_id);
 
     node* current_state = root;
-    size_t health = 0;
     for (char c: text) {
         for (;;) {
             const auto it = current_state->children.find(c);
@@ -147,17 +144,19 @@ size_t process(size_t begin, size_t end, const string& text) {
             if (check_state == root)
                 break;
             
-            health += get_health(check_state, begin, end);
+            //cout << "id: " << check_state->word_id << endl;
+            ++word_counts[check_state->word_id];
     
             check_state = check_state->suffix;
         }
     }
-
-    return health;
 }
 
 } // aho_corasick
 
+vector<string> genes;
+vector<size_t> weights;
+vector<size_t> word_ids;
 
 int main(int argc, char* argv[])
 {
@@ -176,9 +175,12 @@ int main(int argc, char* argv[])
     }
     
     aho_corasick::init();
-    for (size_t i = 0; i < n; ++i)
-        aho_corasick::add_string(genes[i], i);
+    for (size_t i = 0; i < n; ++i) {
+        word_ids.push_back(aho_corasick::add_string(genes[i]));
+        //cout << "added " << genes[i] << endl;
+    }
     aho_corasick::prepare();
+    cout << "prepared" << endl;
 
     size_t minHealth = numeric_limits<size_t>::max();
     size_t maxHealth = 0;
@@ -187,10 +189,18 @@ int main(int argc, char* argv[])
     for (int i = 0; i < cases; ++i) {
         size_t begin, end;
         string strand;
-        size_t health;
+        size_t health = 0;
         cin >> begin >> end >> strand;
-        //for (int j = 0; j < 20; ++j)
-            health = aho_corasick::process(begin, end, strand);
+
+        aho_corasick::process(strand);
+//        cout << "processed " << strand << endl;
+
+        for (int j = begin; j <= end; ++j) {
+            // cout << "j: " << j << endl;
+            // cout << "word id " << word_ids[j] << endl;
+            // cout << "counts " << counts[word_ids[j]] << endl;
+            health += aho_corasick::word_counts[word_ids[j]] * weights[j];
+        }
         minHealth = min(minHealth, health);
         maxHealth = max(maxHealth, health);
     }
