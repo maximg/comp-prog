@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+using namespace std;
+
 size_t sol(size_t n)
 {
     static std::vector<int> sols(n + 1);
@@ -19,6 +21,6 @@ size_t sol(size_t n)
 
 int main()
 {
-    const size_t N = 55;
-    std::cout << N << ": " << sol(N) << std::endl;
+    int n; cin >> n;
+    cout << sol(n) << endl;
 }
