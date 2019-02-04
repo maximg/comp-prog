@@ -43,12 +43,20 @@ void insert(uint32_t v) {
 // Just carefully calculate the cost for each node
 
 uint64_t solve(node* nd, string indent) {
-    //cout << indent << " size: " << nd->size << endl;
     uint64_t cost = nd->count ? uint64_t(nd->count) * nd->size * B : A;
-    uint64_t costLR =
-        (nd->left ? solve(nd->left, indent + "  ") : A) + 
-        (nd->right ? solve(nd->right, indent + "  ") : A);
-    return min(cost, costLR);
+    if (nd->size > 1) {
+        uint64_t costL = nd->left ? solve(nd->left, indent + "  ") : A;
+        uint64_t costR = nd->right ? solve(nd->right, indent + "  ") : A;
+        // cout << indent << "size: " << nd->size
+        //                << " cost: " << cost
+        //                << " costL: " << (nd->size > 1 ? costL : 0)
+        //                << " costR: " << (nd->size > 1 ? costR : 0)
+        //                << endl;
+        return min(cost, costL + costR);
+    } else {
+        // cout << indent << "size: 1 cost: " << cost << endl;
+        return cost;        
+    }
 }
 
 int main(int argc, char* argv[]) {
