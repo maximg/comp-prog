@@ -3,59 +3,59 @@
 #include <iostream>
 #include <queue>
 #include <unordered_map>
+#include <climits>
 
 using namespace std;
 
-using ii = pair<int, int>;
+using ii = int;
 
-ii moves[] = { {-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+ii moves[] = { -1, 1, -10000, 10000};
 
-int N; // board size
+int N = 2001; // board size
 
 bool valid(ii loc) {
-    return (loc.first >= 0) && (loc.first < N) && 
-           (loc.second >= 0) && (loc.second < N);
+    return (loc >= 0) && (loc % 10000) < N && (loc / 10000) < N;
 }
 
-struct pairhash {
-public:
-  template <typename T, typename U>
-  std::size_t operator()(const std::pair<T, U> &x) const
-  {
-    return std::hash<T>()(x.first) ^ std::hash<U>()(x.second);
-  }
-};
+int mkloc(int x, int y) {
+    return x * 10000 + y;
+}
 
-int main()
+
+bool runOnce()
 {
-    unordered_map<ii, int, pairhash> M;
+    unordered_map<ii, int> M;
     queue<ii> bfs;
     int K1, K2;
 
-    cin >> N;    
     cin >> K1;  // number of nodes in fig 1
+    if (K1 == 0)
+        return false;
+
     for (int i = 0; i < K1; ++i) {
         int x, y;
         cin >> x >> y;
-        M[{x,y}] = 0;
-        bfs.push({x,y});
+        ii loc = mkloc(x,y);
+        M[loc] = 0;
+        bfs.push(loc);
     }
     cin >> K2;          // number of nodes in fig 2
     for (int i = 0; i < K2; ++i) {
         int x, y;
         cin >> x >> y;
-        M[{x,y}] = INT_MAX;
+        ii loc = mkloc(x,y);
+        M[loc] = INT_MAX;
     }
 
     int minPath = INT_MAX;
+    int count = 0;
     while (!bfs.empty()) {
         ii loc = bfs.front();
         bfs.pop();
         int cost = M[loc];
         //cout << loc.first << " " << loc.second << " (" << cost << ") " << endl;
         for (int i = 0; i < 4; ++i) {
-            ii loc2 = { loc.first + moves[i].first,
-                        loc.second + moves[i].second };
+            ii loc2 = loc + moves[i];
             if (!valid(loc2)) continue;
             auto it = M.find(loc2);
             if (it == M.end()) {
@@ -83,6 +83,14 @@ int main()
         }
     }
     cout << minPath << endl;
+
+    return true;
+}
+
+int main()
+{
+    while (runOnce())
+        ;
 
     return 0;
 }
