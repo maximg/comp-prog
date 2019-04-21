@@ -9,7 +9,7 @@ using namespace std;
 
 void runTest() {
     int n;
-    scanf("%d\n", &n);
+    cin >> n;
 
     int diameter = 0;
 
@@ -24,16 +24,16 @@ void runTest() {
         if (a.empty() || b.empty())
             break;
 
-        cout << a.size() << " " << b.size() << " ";
+        cout << a.size() << " " << b.size();
         for (auto e: a)
-            cout << e << " ";
+            cout << " " << e;
         for (auto e: b)
-            cout << e << " ";
+            cout << " " << e;
         cout << endl;
         cout.flush();
 
         int dist;
-        scanf("%d", &dist);
+        cin >> dist;
         if (dist < 0) exit(0);
         diameter = max(diameter, dist);
     }
@@ -43,8 +43,10 @@ void runTest() {
 }
 
 int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(0);
     int T;
-    scanf("%d\n", &T);
+    cin >> T;
     while (T--)
         runTest();
     return 0;
