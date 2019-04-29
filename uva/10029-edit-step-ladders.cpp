@@ -11,7 +11,8 @@ struct Vertex {
 };
 
 bool is_edit_step(const string& a, const string& b) {
-    assert (a.size() - b.size() <= 1 || b.size() - a.size() <= 1);
+    if (a.size() - b.size() > 1 && b.size() - a.size() > 1)
+        return false;
 
     int lenA = a.size();
     int lenB = b.size();
@@ -49,19 +50,14 @@ int main() {
             words.emplace_back(str);
     }
 
-    // split in bins by length
-    vector<vector<int>> by_length(16);
-    for (int i = 0; i < words.size(); ++i)
-        by_length[words[i].size()].emplace_back(i);
-
     vector<Vertex> g;
     g.reserve(words.size());
-    for (const auto& w: words) {
+    for (int i = 0; i < words.size(); ++i) {
         g.emplace_back(Vertex{{}});
-        for (int i = max(0ul, w.size()-1); i < min(by_length.size(), w.size()+1); ++i)
-            for (int j = 0; j < by_length[i].size(); ++j)
-                if (is_edit_step(w, words[by_length[i][j]]))
-                    g.back().edges.emplace_back(by_length[i][j]);
+        for (int j = i + 1; j < words.size(); ++j) {
+            if (is_edit_step(words[i], words[j]))
+                g.back().edges.emplace_back(j);
+        }
     }
 
     for (int i = 0; i < words.size(); ++i) {
